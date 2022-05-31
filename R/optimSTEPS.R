@@ -12,11 +12,11 @@ optimSTEPS <- function(data.mat){
 
   c1 <- data.mat$c1
   c2 <- data.mat$c2
-  df <- data.mat$data
+  df.optim <- data.mat$data
 
-  Y <- df[,1]
-  X <- df[,-c(1,2)] %>% as.matrix()
-  Z <- df[,2]
+  Y <- df.optim[,1]
+  X <- df.optim[,-c(1,2)] %>% as.matrix()
+  Z <- df.optim[,2]
 
   n <- nrow(X)
   K <- ncol(X)
@@ -56,7 +56,7 @@ if(tag.oneX == TRUE){
   beta_0 <- c(beta_0, rep(0,K-1))
 }
 
-df <- cbind(Y,Z,X)
+df.optim2 <- cbind(Y,Z,X) %>% as.matrix()
 
 par.in <- c(alpha_0, beta_0, gam_0, sd.z_0, sd.y_0)
 
@@ -67,7 +67,7 @@ fn = function(par){
                  gam = par[3+2*K],
                  sd.z = par[4+2*K],
                  sd.y = par[5+2*K])
-  res.ll = likelihoodSTEPS(df, c1=c1, c2=c2, para.ll)
+  res.ll = likelihoodSTEPS(df.optim2, c1=c1, c2=c2, para.ll)
   return(res.ll$ll)
 }
 
@@ -77,7 +77,7 @@ gr = function(par){
                  gam = par[3+2*K],
                  sd.z = par[4+2*K],
                  sd.y = par[5+2*K])
-  res.ll = likelihoodSTEPS(df, c1=c1, c2=c2, para.ll)
+  res.ll = likelihoodSTEPS(df.optim2, c1=c1, c2=c2, para.ll)
   return(res.ll$d.ll)
 }
 
