@@ -12,6 +12,7 @@
 #' @param gamma Estimate of gamma eps(Y)~Z. Required.
 #' @param maxIter Maximum iteration number for approximation procedure. Default is 1000.
 #' @param verbose Print debugging info or not.
+#' @import
 #' @export
 #' @example
 #' # data.mat <- generateSTEPS(n=1000, p=100, q.a=3, q.b=3, A_coef=0.7, B_coef=0.7, overlap=0,

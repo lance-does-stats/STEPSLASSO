@@ -1,11 +1,19 @@
 Package: STEPSLASSO
 Type: Package
-Title: What the Package Does (Title Case)
+Title: High-Dimensional Regression of Continuous Secondary Trait Under EPS
 Version: 0.1.0
-Author: Who wrote it
+Author@R: person("Lance", "Ford", "lance.does.stats@gmail.com")
 Maintainer: The package maintainer <yourself@somewhere.net>
-Description: More about what it does (maybe more than one line)
-    Use four spaces when indenting paragraphs within the Description.
-License: What license is it under?
+Description: Conducts High-Dimensional Regression of Continuous Secondary Trait 
+    Under Extreme Phenotype Sampling
+License: None
 Encoding: UTF-8
 LazyData: true
+Imports: 
+    dplyr,
+    MASS,
+    glmnet,
+    stats,
+    parallel,
+    doParallel,
+    foreach
