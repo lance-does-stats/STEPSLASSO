@@ -81,16 +81,16 @@ stepsLasso <- function(Y, c1, c2, Z, X, beta.hat, sdy.hat, maxIter=1000, verbose
   HDIC.out=foreach(i = 1:length(lam0), .combine=c, .export=c('stepsLassoSolver','stepsLeastR','stepsGLMNET','likelihoodSTEPS'), .packages=c('MASS','glmnet')) %dopar%{
     HDIC <- c()
 
-    par.in <- c(as.vector(c(0,iter$alpha)),
-                as.vector(c(0,beta.hat)),
-                as.vector(iter$gamma),
-                as.vector(iter$sdz),
-                as.vector(sdy.hat))
 
     iter <- stepsLassoSolver(A=X, Y2=Z, Y1=Y, X1=beta.hat, gamma=gam2, c1=c1, c2=c2,
                              lambda = lam0[i], sigma2=sdz2, sigma1 = sdy.hat,
                              maxIter=maxIter, verbose=verbose)
 
+    par.in <- c(as.vector(c(0,iter$alpha)),
+                as.vector(c(0,beta.hat)),
+                as.vector(iter$gamma),
+                as.vector(iter$sdz),
+                as.vector(sdy.hat))
 
 
 
