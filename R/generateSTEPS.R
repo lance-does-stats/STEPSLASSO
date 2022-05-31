@@ -47,6 +47,3 @@ generateSTEPS <- function(n, p, q.a, q.b, A_int=0, B_int=0, A_coef, B_coef, over
   list("A0"=A[1], "A"=A[-1], "B0"=B[1], "B"=B[-1], "c1"=c1, "c2"=c2, "gam"=gam, "sd.y"=sd.y, "sd.z"=sd.z, "data"=data)
 
 }
-
-#data.mat <- generateSTEPS(n=1000, p=10, q.a=3, q.b=3, A_coef = 0.4, B_coef = 0.4, gam=0.8, sd.y=1, sd.z=1, eps=0.5)
-
