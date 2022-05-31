@@ -63,18 +63,6 @@ stepsLasso <- function(Y, c1, c2, Z, X, beta.hat, sdy.hat, maxIter=1000, verbose
     lam0=lam0[order(lam0)];
   }
 
-  # Function to calculate -logLikelihood value
-  df <- cbind(Y,Z,X)
-  fn = function(par){
-    para.ll = list(A0= par[1], A = par[1+1:pX],
-                   B0=par[2+pX], B = par[2+pX+1:pX],
-                   gam = par[3+2*pX],
-                   sd.z = par[4+2*pX],
-                   sd.y = par[5+2*pX])
-    res.ll = likelihoodSTEPS(df, c1=c1, c2=c2, para.ll)
-    return(res.ll$ll)
-  }
-
   # Parallel
   options(warn = -1)
   cl <- parallel::makeCluster(parallel::detectCores() - 1)
@@ -85,13 +73,6 @@ stepsLasso <- function(Y, c1, c2, Z, X, beta.hat, sdy.hat, maxIter=1000, verbose
     iter <- stepsLassoSolver(A=X, Y2=Z, Y1=Y, X1=beta.hat, gamma=gam2, c1=c1, c2=c2,
                              lambda = lam0[i], sigma2=sdz2, sigma1 = sdy.hat,
                              maxIter=maxIter, verbose=verbose)
-
-
-    par.in <- c(as.vector(c(0,iter$alpha)),
-                as.vector(c(0,beta.hat)),
-                as.vector(iter$gamma),
-                as.vector(iter$sdz),
-                as.vector(sdy.hat))
 
 
     # Number of covariates selected
