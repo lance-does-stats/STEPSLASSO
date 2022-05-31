@@ -16,14 +16,14 @@ stepsGLMNET <- function(data.mat){
   z.test <- data.mat$data[test,2]
 
   #Use CV to choose best lambda based on MSE
-  cvfit <- glmnet::cv.glmnet(x=data.mat$data[train,-c(1,2)],y=data.mat$data[train,2], alpha=1)
+  cvfit <- cv.glmnet(x=data.mat$data[train,-c(1,2)],y=data.mat$data[train,2], alpha=1)
   bestlam <- cvfit$lambda.min
 
   grid <- 10^ seq (10 , -2 , length = 100)
-  out <- glmnet::glmnet(x=data.mat$data[,-c(1,2)], y=data.mat$data[,2], alpha=1, lambda=grid)
+  out <- glmnet(x=data.mat$data[,-c(1,2)], y=data.mat$data[,2], alpha=1, lambda=grid)
 
 
-  alpha.k0 <- stats::predict(out, type="coefficients", s=bestlam)
+  alpha.k0 <- predict(out, type="coefficients", s=bestlam)
   include <- which(alpha.k0!=0)[-1] + 1
 
 
