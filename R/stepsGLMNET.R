@@ -2,7 +2,7 @@
 #'
 #' This function calculates initial values for sdz and gamma for high-dimensional extreme phenotype sampling data.
 #' @param data.mat Data frame containing Z, X. Required.
-#' @import dplyr glmnet
+#' @import magrittr glmnet
 #' @export
 
 

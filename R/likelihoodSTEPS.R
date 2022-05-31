@@ -5,7 +5,7 @@
 #' @param c1 Right censored point. Required.
 #' @param c2 Left censored point. Required.
 #' @param para Vector of parameter estimates. Required.
-#' @import MASS dplyr
+#' @import MASS magrittr
 #' @export
 #' @example
 #' df <- generateSTEPS(n=1000, p=10, q.a=3, q.b=3, A_coef=0.8, B_coef=0.8, gam=0.8, sd.y=1, sd.z=1, eps=0.2)

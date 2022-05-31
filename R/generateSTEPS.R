@@ -12,7 +12,7 @@
 #' @param sd.y - true standard deviation of primary trait (default=1)
 #' @param sd.z - true standard deviation of secondary trait (default=1)
 #' @param eps - upper and lower quantile to sampled from full sample to phenotype (default=0.5; full sample)
-#' @import dplyr MASS
+#' @import magrittr MASS
 #' @export
 
 generateSTEPS <- function(n, p, q.a, q.b, A_int=0, B_int=0, A_coef, B_coef, overlap=0, gam=1, sd.y=1, sd.z=1, eps=0.5){

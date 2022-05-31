@@ -4,7 +4,7 @@
 #' @param data.mat Data frame containing Y, Z, X, c1, c2. Required.
 #' @param c1 Right censored point. Required.
 #' @param c2 Left censored point. Required.
-#' @import MASS dplyr stats
+#' @import MASS magrittr stats
 #' @export
 
 optimSTEPS <- function(data.mat){

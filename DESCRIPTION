@@ -10,7 +10,7 @@ License: None
 Encoding: UTF-8
 LazyData: true
 Imports: 
-    dplyr,
+    magrittr,
     MASS,
     glmnet,
     stats,
