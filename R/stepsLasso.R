@@ -63,6 +63,17 @@ stepsLasso <- function(Y, c1, c2, Z, X, beta.hat, sdy.hat, maxIter=1000, verbose
     lam0=lam0[order(lam0)];
   }
 
+  df <- cbind(Y,Z,X) %>% as.matrix()
+  fn = function(par){
+    para.ll = list(A0= par[1], A = par[1+1:K],
+                   B0=par[2+K], B = par[2+K+1:K],
+                   gam = par[3+2*K],
+                   sd.z = par[4+2*K],
+                   sd.y = par[5+2*K])
+    res.ll = likelihoodSTEPS(df, c1=c1, c2=c2, para.ll)
+    return(res.ll$ll)
+  }
+
   # Parallel
   options(warn = -1)
   cl <- parallel::makeCluster(parallel::detectCores() - 1)
