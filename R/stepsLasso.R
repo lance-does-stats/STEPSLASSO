@@ -63,14 +63,14 @@ stepsLasso <- function(Y, c1, c2, Z, X, beta.hat, sdy.hat, maxIter=1000, verbose
     lam0=lam0[order(lam0)];
   }
 
-  df <- cbind(Y,Z,X) %>% as.matrix()
+  df3 <- cbind(Y,Z,X) %>% as.matrix()
   fn = function(par){
     para.ll = list(A0= par[1], A = par[1+1:K],
                    B0=par[2+K], B = par[2+K+1:K],
                    gam = par[3+2*K],
                    sd.z = par[4+2*K],
                    sd.y = par[5+2*K])
-    res.ll = likelihoodSTEPS(df, c1=c1, c2=c2, para.ll)
+    res.ll = likelihoodSTEPS(df3, c1=c1, c2=c2, para.ll)
     return(res.ll$ll)
   }
 
@@ -81,9 +81,17 @@ stepsLasso <- function(Y, c1, c2, Z, X, beta.hat, sdy.hat, maxIter=1000, verbose
   HDIC.out=foreach(i = 1:length(lam0), .combine=c, .export=c('stepsLassoSolver','stepsLeastR','stepsGLMNET','likelihoodSTEPS'), .packages=c('MASS','glmnet')) %dopar%{
     HDIC <- c()
 
+    par.in <- c(as.vector(c(0,iter$alpha)),
+                as.vector(c(0,beta.hat)),
+                as.vector(iter$gamma),
+                as.vector(iter$sdz),
+                as.vector(sdy.hat))
+
     iter <- stepsLassoSolver(A=X, Y2=Z, Y1=Y, X1=beta.hat, gamma=gam2, c1=c1, c2=c2,
                              lambda = lam0[i], sigma2=sdz2, sigma1 = sdy.hat,
                              maxIter=maxIter, verbose=verbose)
+
+
 
 
     # Number of covariates selected
