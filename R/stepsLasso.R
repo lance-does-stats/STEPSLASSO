@@ -112,10 +112,11 @@ stepsLasso <- function(Y, c1, c2, Z, X, beta.hat, sdy.hat, maxIter=1000, verbose
 
 
   #### STEP 4 - Use stepsLassoSolver (stepsLeastR nested within) to iteratively estimate A ####
-
+  options(warn = -1)
   estimates4 <- stepsLassoSolver(A=X, Y1=Y, X1=beta.hat, Y2=Z,
                                  c1=c1, c2=c2, lambda=bestlam, sigma1=sdy.hat, sigma2=sdz2, gamma=gam2,
                                  maxIter=maxIter, verbose=verbose)
+  options(warn = 0)
   gam4 <- estimates4$gamma
   sdz4 <- estimates4$sdz
   alpha4 <- estimates4$alpha[which(estimates4$alpha!=0),]

@@ -85,7 +85,7 @@ stepsLassoSolver=function(A, Y1, X1, Y2, c1, c2, lambda, sigma1, sigma2, gamma, 
       return(res.ll$d.ll)
     }
 
-    res.opt=optim(par.in,fn,gr,method = "BFGS")
+    res.opt=optim(par.in,fn,gr,method = "CG")
 
     sigma2=res.opt$par[4+2*pX]
     gamma=res.opt$par[3+2*pX]
