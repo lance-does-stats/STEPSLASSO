@@ -31,7 +31,7 @@
 #'                      sigma1=sdy.hat, sigma2=int.sigma2, gamma=int.gamma)
 
 
-stepsLassoSolver=function(A, Y1, X1, Y2, c1, c2, lambda, sigma1, sigma2, gamma, maxIter=1000, verbose=FALSE){
+stepsLassoSolver=function(A, Y1, X1, Y2, c1, c2, lambda, sigma1, sigma2, gamma, method="L-BFGS-B", maxIter=1000, verbose=FALSE){
 
   pX=ncol(A)
   nX=nrow(A)
@@ -85,7 +85,13 @@ stepsLassoSolver=function(A, Y1, X1, Y2, c1, c2, lambda, sigma1, sigma2, gamma, 
       return(res.ll$d.ll)
     }
 
-    res.opt=optim(par.in,fn,gr,method = "CG")
+    if(method=="CG" || method == "BFGS"){
+      res.opt=optim(par.in,fn,gr,method = method)
+    } else{
+      res.opt=optim(par.in, fn, gr, method = method,
+                    lower=c(0, rep(0,pX), 0, rep(0,pX), 0, 0.0001, 0.0001),
+                    upper=c(10000, rep(10000,pX), 10000, rep(10000,pX), 1000, 1000, 1000))
+    }
 
     sigma2=res.opt$par[4+2*pX]
     gamma=res.opt$par[3+2*pX]

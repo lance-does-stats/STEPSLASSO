@@ -128,7 +128,7 @@ stepsLasso <- function(Y, c1, c2, Z, X, beta.hat, sdy.hat, maxIter=1000, verbose
 
       outlist = stepsLassoSolver(A=A.sub, Y2=Z.sub, Y1=Y.sub, X1=beta.hat, gamma=gam2, c1=c1, c2=c2,
                                  lambda = lam0[i], sigma2=sdz2, sigma1 = sdy.hat,
-                                 maxIter=maxIter, verbose=verbose)
+                                 method="CG", maxIter=maxIter, verbose=verbose)
       Ax=not.fold[,-c(1,2)] %*% outlist$alpha
       Axz=Ax-not.fold[,2];
       mse[j]=sum(Axz^2)
@@ -146,8 +146,6 @@ stepsLasso <- function(Y, c1, c2, Z, X, beta.hat, sdy.hat, maxIter=1000, verbose
                                  c1=c1, c2=c2, lambda=bestlam, sigma1=sdy.hat, sigma2=sdz2, gamma=gam2,
                                  maxIter=maxIter, verbose=verbose)
   options(warn = 0)
-  # gam4 <- estimates4$gamma
-  # sdz4 <- estimates4$sdz
   alpha4 <- estimates4$alpha[which(estimates4$alpha!=0),]
 
   if(length(alpha4)==0){
@@ -163,8 +161,7 @@ stepsLasso <- function(Y, c1, c2, Z, X, beta.hat, sdy.hat, maxIter=1000, verbose
                 gamma.hat=NULL))
     invokeRestart("abort")
   }
-  # S.hat <- noquote(names(alpha4))
-  # include4 <- which(estimates4$alpha!=0)
+
 
   #### STEP 5 - Get D-Score p-value based on stepsLassoSolver estimates using stepsHDScoreTest() ####
 
@@ -177,13 +174,6 @@ stepsLasso <- function(Y, c1, c2, Z, X, beta.hat, sdy.hat, maxIter=1000, verbose
   include5 <- which(alpha.HD.score[,2]<0.05)
 
 
-
-
-  # data.mat5 <- list(c1=c1,c2=c2,data=cbind(Y,Z,X[,include4]))
-  # estimates5 <- stepsLD(data.mat5)
-  # rownames(estimates5$alpha.table) <- S.hat
-  # colnames(estimates5$alpha.table)[1] <- "alpha.hat"
-  # colnames(estimates5$beta) <- S.hat
 
   #### STEP 6 - Refit estimates with p<0.05 using stepsLD() ####
 
