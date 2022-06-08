@@ -8,7 +8,7 @@
 #' @example
 
 
-stepsHDScore <- function(list, null_value=0){
+stepsHDScoreTest <- function(list, null_value=0){
   c1 <- list$c1
   c2 <- list$c2
   df <- list$data

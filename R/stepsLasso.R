@@ -64,52 +64,81 @@ stepsLasso <- function(Y, c1, c2, Z, X, beta.hat, sdy.hat, maxIter=1000, verbose
   }
 
   df3 <- cbind(Y,Z,X) %>% as.matrix()
-  fn = function(par){
-    para.ll = list(A0= par[1], A = par[1+1:K],
-                   B0=par[2+K], B = par[2+K+1:K],
-                   gam = par[3+2*K],
-                   sd.z = par[4+2*K],
-                   sd.y = par[5+2*K])
-    res.ll = likelihoodSTEPS(df3, c1=c1, c2=c2, para.ll)
-    return(res.ll$ll)
-  }
+  #### HDIC ####
+  # fn = function(par){
+  #   para.ll = list(A0= par[1], A = par[1+1:K],
+  #                  B0=par[2+K], B = par[2+K+1:K],
+  #                  gam = par[3+2*K],
+  #                  sd.z = par[4+2*K],
+  #                  sd.y = par[5+2*K])
+  #   res.ll = likelihoodSTEPS(df3, c1=c1, c2=c2, para.ll)
+  #   return(res.ll$ll)
+  # }
+  #
+  # # Parallel
+  # options(warn = -1)
+  # cl <- parallel::makeCluster(parallel::detectCores() - 1)
+  # doParallel::registerDoParallel(cl)
+  # HDIC.out=foreach(i = 1:length(lam0), .combine=c, .export=c('stepsLassoSolver','stepsLeastR','stepsGLMNET','likelihoodSTEPS'), .packages=c('MASS','glmnet')) %dopar%{
+  #   HDIC <- c()
+  #
+  #
+  #   iter <- stepsLassoSolver(A=X, Y2=Z, Y1=Y, X1=beta.hat, gamma=gam2, c1=c1, c2=c2,
+  #                            lambda = lam0[i], sigma2=sdz2, sigma1 = sdy.hat,
+  #                            maxIter=maxIter, verbose=verbose)
+  #
+  #   par.in <- c(as.vector(c(0,iter$alpha)),
+  #               as.vector(c(0,beta.hat)),
+  #               as.vector(iter$gamma),
+  #               as.vector(iter$sdz),
+  #               as.vector(sdy.hat))
+  #
+  #
+  #
+  #   # Number of covariates selected
+  #   k <- length(which(iter$alpha!=0))
+  #
+  #   #HDIC <- 2*fn(par.in) + k*log(nX)
+  #   #HDIC <- 2*fn(par.in) + k*pX^(1/3)
+  #   HDIC <- 2*fn(par.in) + k*2*log(pX)
+  #
+  #
+  #   return(HDIC)
+  # }
+  # parallel::stopCluster(cl)
+  # options(warn = 0)
+  #
+  # HDIC <- cbind(lam0,HDIC.out)
+  # bestlam <- HDIC[HDIC[,2]==min(HDIC[,2]),][1]
 
-  # Parallel
-  options(warn = -1)
+  #### Cross validation ####
+  nfolds=10;
+  foldid = sample(rep(seq(nfolds), length = nX))
+
   cl <- parallel::makeCluster(parallel::detectCores() - 1)
   doParallel::registerDoParallel(cl)
-  HDIC.out=foreach(i = 1:length(lam0), .combine=c, .export=c('stepsLassoSolver','stepsLeastR','stepsGLMNET','likelihoodSTEPS'), .packages=c('MASS','glmnet')) %dopar%{
-    HDIC <- c()
+  cv.mse=foreach(i = 1:length(lam0), .combine=c, .export=c('stepsLassoSolver','stepsLeastR','stepsGLMNET','likelihoodSTEPS')) %dopar%{
+    mse <- c()
+    for(j in 1:nfolds){
+      not.fold <- df3[foldid != j,]
+      fold <- df3[foldid == j,]
+      A.sub <- fold[,-c(1,2)]
+      Y.sub <- fold[,1]
+      Z.sub <- fold[,2]
 
-
-    iter <- stepsLassoSolver(A=X, Y2=Z, Y1=Y, X1=beta.hat, gamma=gam2, c1=c1, c2=c2,
-                             lambda = lam0[i], sigma2=sdz2, sigma1 = sdy.hat,
-                             maxIter=maxIter, verbose=verbose)
-
-    par.in <- c(as.vector(c(0,iter$alpha)),
-                as.vector(c(0,beta.hat)),
-                as.vector(iter$gamma),
-                as.vector(iter$sdz),
-                as.vector(sdy.hat))
-
-
-
-    # Number of covariates selected
-    k <- length(which(iter$alpha!=0))
-
-    #HDIC <- 2*fn(par.in) + k*log(nX)
-    #HDIC <- 2*fn(par.in) + k*pX^(1/3)
-    HDIC <- 2*fn(par.in) + k*2*log(pX)
-
-
-    return(HDIC)
+      outlist = stepsLassoSolver(A=A.sub, Y2=Z.sub, Y1=Y.sub, X1=beta.hat, gamma=gam2, c1=c1, c2=c2,
+                                 lambda = lam0[i], sigma2=sdz2, sigma1 = sdy.hat,
+                                 maxIter=maxIter, verbose=verbose)
+      Ax=not.fold[,-c(1,2)] %*% outlist$alpha
+      Axz=Ax-not.fold[,2];
+      mse[j]=sum(Axz^2)
+    }
+    return(mean(mse))
   }
   parallel::stopCluster(cl)
-  options(warn = 0)
 
-  HDIC <- cbind(lam0,HDIC.out)
-  bestlam <- HDIC[HDIC[,2]==min(HDIC[,2]),][1]
-
+  mse <- cbind(lam0,cv.mse)
+  bestlam <- mse[mse[,2]==min(mse[,2]),][1]
 
   #### STEP 4 - Use stepsLassoSolver (stepsLeastR nested within) to iteratively estimate A ####
   options(warn = -1)
@@ -117,42 +146,66 @@ stepsLasso <- function(Y, c1, c2, Z, X, beta.hat, sdy.hat, maxIter=1000, verbose
                                  c1=c1, c2=c2, lambda=bestlam, sigma1=sdy.hat, sigma2=sdz2, gamma=gam2,
                                  maxIter=maxIter, verbose=verbose)
   options(warn = 0)
-  gam4 <- estimates4$gamma
-  sdz4 <- estimates4$sdz
+  # gam4 <- estimates4$gamma
+  # sdz4 <- estimates4$sdz
   alpha4 <- estimates4$alpha[which(estimates4$alpha!=0),]
 
   if(length(alpha4)==0){
-    return(list(result.table=NULL,
-         alpha.hat = NULL,
-         sdz.hat=NULL,
-         gamma.hat=NULL,
-         sdy.hat=NULL,
-         beta.hat=NULL,
-         included.X=NULL, best.lambda=bestlam))
+    return(list(beta.hat=beta.hat,
+                sdy.hat=sdy.hat,
+                initial.gamma=gam2,
+                initial.sdz=sdz2,
+                best.lambda=bestlam,
+                alpha.lasso=NULL,
+                X.sig.05=NULL,
+                alpha.hat=NULL,
+                sdz.hat=NULL,
+                gamma.hat=NULL))
     invokeRestart("abort")
   }
-  S.hat <- noquote(names(alpha4))
-  include4 <- which(estimates4$alpha!=0)
+  # S.hat <- noquote(names(alpha4))
+  # include4 <- which(estimates4$alpha!=0)
 
-  #### STEP 5 - Refit estimates using stepsLD() ####
+  #### STEP 5 - Get D-Score p-value based on stepsLassoSolver estimates using stepsHDScoreTest() ####
 
-  data.mat5 <- list(c1=c1,c2=c2,data=cbind(Y,Z,X[,include4]))
-  estimates5 <- stepsLD(data.mat5)
-  rownames(estimates5$alpha.table) <- S.hat
-  colnames(estimates5$alpha.table)[1] <- "alpha.hat"
-  #colnames(estimates5$beta) <- S.hat
+  data.mat5 <- list(data=df3, c1=c1, c2=c2, sdy=sdy.hat, beta=beta.hat,
+                    sdz=estimates4$sdz, gamma=estimates4$gamma, alpha=estimates4$alpha)
+
+  alpha.HD.score <- stepsHDScoreTest(data.mat5)
+  alpha5 <- alpha.HD.score[which(alpha.HD.score[,2]<0.05),2]
+  S.hat <- noquote(names(alpha5))
+  include5 <- which(alpha.HD.score[,2]<0.05)
 
 
-  #### STEP 6 - Return estimates ####
 
 
-  list(result.table=estimates5$alpha.table,
-       alpha.hat = estimates5$alpha,
-       sdz.hat=estimates5$sdz,
-       gamma.hat=estimates5$gamma,
-       sdy.hat=estimates5$sdy,
-       beta.hat=estimates5$beta,
-       included.X=S.hat, best.lambda=bestlam)
+  # data.mat5 <- list(c1=c1,c2=c2,data=cbind(Y,Z,X[,include4]))
+  # estimates5 <- stepsLD(data.mat5)
+  # rownames(estimates5$alpha.table) <- S.hat
+  # colnames(estimates5$alpha.table)[1] <- "alpha.hat"
+  # colnames(estimates5$beta) <- S.hat
+
+  #### STEP 6 - Refit estimates with p<0.05 using stepsLD() ####
+
+  data.mat6 <- list(c1=c1,c2=c2,data=cbind(Y,Z,X[,include5]))
+  estimates6 <- stepsLD(data.mat6)
+  rownames(estimates6$alpha.table) <- S.hat
+  colnames(estimates6$alpha.table)[1] <- "alpha.hat"
+
+  #### STEP 7 - Return estimates ####
+
+
+  list(beta.hat=beta.hat,
+       sdy.hat=sdy.hat,
+       initial.gamma=gam2,
+       initial.sdz=sdz2,
+       best.lambda=bestlam,
+       alpha.lasso=alpha.HD.score,
+       X.sig.05=S.hat,
+       alpha.hat=estimates6$alpha.hat,
+       sdz.hat=estimates6$sdz.hat,
+       gamma.hat=estimates6$gamma.hat)
+
 
 
 }

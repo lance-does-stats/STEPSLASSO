@@ -38,9 +38,7 @@ stepsLD <- function(data.mat){
   list(alpha.table=cbind(estimates$alpha, pval.s, pval.w, pval.lrt),
        alpha.hat = estimates$alpha,
        sdz.hat=estimates$sdz,
-       gamma.hat=estimates$gamma,
-       sdy.hat=estimates$sdy,
-       beta.hat=estimates$beta)
+       gamma.hat=estimates$gamma)
 
 }
 
