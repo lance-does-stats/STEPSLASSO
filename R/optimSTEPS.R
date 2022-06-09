@@ -7,7 +7,7 @@
 #' @import MASS magrittr stats
 #' @export
 
-optimSTEPS <- function(data.mat){
+optimSTEPS <- function(data.mat, method="L-BFGS-B"){
 
 
   c1 <- data.mat$c1
@@ -81,7 +81,13 @@ gr = function(par){
   return(res.ll$d.ll)
 }
 
-res.opt=stats::optim(par.in,fn,gr,method = "BFGS")
+if(method=="CG" || method == "BFGS"){
+  res.opt=optim(par.in,fn,gr,method = method)
+} else{
+  res.opt=optim(par.in, fn, gr, method = method,
+                lower=c(0, rep(0,pX), 0, rep(0,pX), 0, 0.0001, 0.0001),
+                upper=c(10000, rep(10000,pX), 10000, rep(10000,pX), 1000, 1000, 1000))
+}
 
 
 names(res.opt$par) = c("a0", paste("a",1:K,sep=""),

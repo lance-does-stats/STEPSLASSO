@@ -128,7 +128,7 @@ stepsLasso <- function(Y, c1, c2, Z, X, beta.hat, sdy.hat, maxIter=1000, verbose
 
       outlist = stepsLassoSolver(A=A.sub, Y2=Z.sub, Y1=Y.sub, X1=beta.hat, gamma=gam2, c1=c1, c2=c2,
                                  lambda = lam0[i], sigma2=sdz2, sigma1 = sdy.hat,
-                                 method="CG", maxIter=maxIter, verbose=verbose)
+                                 method="BFGS", maxIter=maxIter, verbose=verbose)
       Ax=not.fold[,-c(1,2)] %*% outlist$alpha
       Axz=Ax-not.fold[,2];
       mse[j]=sum(Axz^2)
@@ -192,6 +192,7 @@ stepsLasso <- function(Y, c1, c2, Z, X, beta.hat, sdy.hat, maxIter=1000, verbose
        best.lambda=bestlam,
        alpha.lasso=alpha.HD.score,
        X.sig.05=S.hat,
+       alpha.hat.table=estimates6$alpha.table,
        alpha.hat=estimates6$alpha.hat,
        sdz.hat=estimates6$sdz.hat,
        gamma.hat=estimates6$gamma.hat)
