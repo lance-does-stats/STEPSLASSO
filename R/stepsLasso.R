@@ -25,7 +25,7 @@
 #' stepsLasso1(Y=Y, c1=c1, c2=c2, Z=Z, X=X, beta.hat = beta.hat, sdy.hat = sdy.hat)
 
 
-stepsLasso <- function(Y, c1, c2, Z, X, beta.hat, sdy.hat, maxIter=1000, verbose=FALSE){
+stepsLasso <- function(Y, c1, c2, Z, X, beta.hat, sdy.hat, maxIter=1000, verbose=FALSE, LassoParallel=T, TestParallel=F, reserveNcores=1){
   #### STEP 1 - Estimate Beta.hat and sdy.hat from EPS-LASSO ####
 
   beta.hat <- beta.hat
@@ -77,7 +77,7 @@ stepsLasso <- function(Y, c1, c2, Z, X, beta.hat, sdy.hat, maxIter=1000, verbose
   #
   # # Parallel
   # options(warn = -1)
-  # cl <- parallel::makeCluster(parallel::detectCores() - 1)
+  # cl <- parallel::makeCluster(parallel::detectCores() - reserveNcores)
   # doParallel::registerDoParallel(cl)
   # HDIC.out=foreach(i = 1:length(lam0), .combine=c, .export=c('stepsLassoSolver','stepsLeastR','stepsGLMNET','likelihoodSTEPS'), .packages=c('MASS','glmnet')) %dopar%{
   #   HDIC <- c()
@@ -114,28 +114,50 @@ stepsLasso <- function(Y, c1, c2, Z, X, beta.hat, sdy.hat, maxIter=1000, verbose
   #### Cross validation ####
   nfolds=10;
   foldid = sample(rep(seq(nfolds), length = nX))
+  if(LassoParallel==T){
+    cl <- parallel::makeCluster(parallel::detectCores() - reserveNcores)
+    doParallel::registerDoParallel(cl)
+    cv.mse=foreach(i = 1:length(lam0), .combine=c, .export=c('stepsLassoSolver','stepsLeastR','stepsGLMNET','likelihoodSTEPS')) %dopar%{
+      mse <- c()
+      for(j in 1:nfolds){
+        not.fold <- df3[foldid != j,]
+        fold <- df3[foldid == j,]
+        A.sub <- fold[,-c(1,2)]
+        Y.sub <- fold[,1]
+        Z.sub <- fold[,2]
 
-  cl <- parallel::makeCluster(parallel::detectCores() - 1)
-  doParallel::registerDoParallel(cl)
-  cv.mse=foreach(i = 1:length(lam0), .combine=c, .export=c('stepsLassoSolver','stepsLeastR','stepsGLMNET','likelihoodSTEPS')) %dopar%{
-    mse <- c()
-    for(j in 1:nfolds){
-      not.fold <- df3[foldid != j,]
-      fold <- df3[foldid == j,]
-      A.sub <- fold[,-c(1,2)]
-      Y.sub <- fold[,1]
-      Z.sub <- fold[,2]
-
-      outlist = stepsLassoSolver(A=A.sub, Y2=Z.sub, Y1=Y.sub, X1=beta.hat, gamma=gam2, c1=c1, c2=c2,
-                                 lambda = lam0[i], sigma2=sdz2, sigma1 = sdy.hat,
-                                 method="BFGS", maxIter=maxIter, verbose=verbose)
-      Ax=not.fold[,-c(1,2)] %*% outlist$alpha
-      Axz=Ax-not.fold[,2];
-      mse[j]=sum(Axz^2)
+        outlist = stepsLassoSolver(A=A.sub, Y2=Z.sub, Y1=Y.sub, X1=beta.hat, gamma=gam2, c1=c1, c2=c2,
+                                   lambda = lam0[i], sigma2=sdz2, sigma1 = sdy.hat,
+                                   method="BFGS", maxIter=maxIter, verbose=verbose)
+        Ax=not.fold[,-c(1,2)] %*% outlist$alpha
+        Axz=Ax-not.fold[,2];
+        mse[j]=sum(Axz^2)
+      }
+      return(mean(mse))
     }
-    return(mean(mse))
+    parallel::stopCluster(cl)
+
+  } else{
+
+    for(i in 1:length(lam0)){
+      mse=c()
+      for(j in 1:nfolds){
+        not.fold <- df3[foldid != j,]
+        fold <- df3[foldid == j,]
+        A.sub <- fold[,-c(1,2)]
+        Y.sub <- fold[,1]
+        Z.sub <- fold[,2]
+
+        outlist = stepsLassoSolver(A=A.sub, Y2=Z.sub, Y1=Y.sub, X1=beta.hat, gamma=gam2, c1=c1, c2=c2,
+                                   lambda = lam0[i], sigma2=sdz2, sigma1 = sdy.hat,
+                                   method="BFGS", maxIter=maxIter, verbose=verbose)
+        Ax=not.fold[,-c(1,2)] %*% outlist$alpha
+        Axz=Ax-not.fold[,2];
+        mse[j]=sum(Axz^2)
+      }
+    }
   }
-  parallel::stopCluster(cl)
+
 
   mse <- cbind(lam0,cv.mse)
   bestlam <- mse[mse[,2]==min(mse[,2]),][1]
@@ -168,7 +190,7 @@ stepsLasso <- function(Y, c1, c2, Z, X, beta.hat, sdy.hat, maxIter=1000, verbose
   data.mat5 <- list(data=df3, c1=c1, c2=c2, sdy=sdy.hat, beta=beta.hat,
                     sdz=estimates4$sdz, gamma=estimates4$gamma, alpha=estimates4$alpha)
 
-  alpha.HD.score <- stepsHDScoreTest(data.mat5)
+  alpha.HD.score <- stepsHDScoreTest(data.mat5, TestParallel=TestParallel, reserveNcores=reserveNcores)
   alpha5 <- alpha.HD.score[which(alpha.HD.score[,2]<0.05),2]
   S.hat <- noquote(names(alpha5))
   include5 <- which(alpha.HD.score[,2]<0.05)

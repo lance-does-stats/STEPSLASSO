@@ -9,11 +9,6 @@ Description: Conducts High-Dimensional Regression of Continuous Secondary Trait
 License: None
 Encoding: UTF-8
 LazyData: true
+Depends: magrittr, MASS, glmnet, stats, parallel, doParallel, foreach
 Imports: 
-    magrittr,
-    MASS,
-    glmnet,
-    stats,
-    parallel,
-    doParallel,
-    foreach
+    
