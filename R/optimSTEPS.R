@@ -82,11 +82,13 @@ gr = function(par){
 }
 
 if(method=="CG" || method == "BFGS"){
-  res.opt=optim(par.in,fn,gr,method = method)
+  res.opt=tryCatch(optim(par.in,fn,gr,method = method), error=function(e) optim(par.in,fn,gr, method = "L-BFGS-B"))
+
 } else{
-  res.opt=optim(par.in, fn, gr, method = method,
+  res.opt=tryCatch(optim(par.in, fn, gr, method = method,
                 lower=c(0, rep(0,K), 0, rep(0,K), 0, 0.0001, 0.0001),
-                upper=c(10000, rep(10000,K), 10000, rep(10000,K), 1000, 1000, 1000))
+                upper=c(10000, rep(10000,K), 10000, rep(10000,K), 1000, 1000, 1000)), error=function(e) optim(par.in,fn,gr, method = "CG"))
+
 }
 
 
