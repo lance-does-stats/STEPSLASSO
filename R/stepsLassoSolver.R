@@ -90,7 +90,7 @@ stepsLassoSolver=function(A, Y1, X1, Y2, c1, c2, lambda, sigma1, sigma2, gamma, 
     } else{
       res.opt=tryCatch(optim(par.in, fn, gr, method = method,
                     lower=c(0, rep(0,pX), 0, rep(0,pX), 0, 0.0001, 0.0001),
-                    upper=c(10000, rep(10000,pX), 10000, rep(10000,pX), 1000, 1000, 1000)), {optim(par.in,fn,gr,method = "CG")})
+                    upper=c(10000, rep(10000,pX), 10000, rep(10000,pX), 1000, 1000, 1000)), error=function(e) {optim(par.in,fn,gr,method = "CG")})
     }
 
     sigma2=res.opt$par[4+2*pX]
