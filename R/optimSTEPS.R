@@ -21,40 +21,59 @@ optimSTEPS <- function(data.mat, method="L-BFGS-B"){
   n <- nrow(X)
   K <- ncol(X)
 
-if(dim(X)[2]==0){
-  n <- length(Y)
-  K <- 2 #done to pass an empty matrix as covariates; K=1 vector messes with
-  X <- matrix(0, nrow=n , ncol= K)
+  if(dim(X)[2]==0){
+    n <- length(Y)
+    K <- 2 #done to pass an empty matrix as covariates; K=1 vector messes with
+    X <- matrix(0, nrow=n , ncol= K)
 
-  tag.noX = TRUE
-} else tag.noX = FALSE
-
-
-if(dim(X)[2]==1){
-  n <- length(X)
-  K <- 2
-  X <- cbind(X,0)
-
-  tag.oneX = TRUE
-} else tag.oneX = FALSE
+    tag.noX = TRUE
+  } else tag.noX = FALSE
 
 
+  if(dim(X)[2]==1){
+    n <- length(X)
+    K <- 2
+    X <- cbind(X,0)
 
-alpha_0 = as.vector(summary(lm(Z~X))$coefficients[,1])
-beta_0 = as.vector(summary(lm(Y~Z+X))$coefficients[-2,1])
-gam_0 = as.vector(summary(lm(Y~Z+X))$coefficients[2,1])
-sd.z_0 = as.vector(summary(lm(Z~X))$sigma)
-sd.y_0 = as.vector(summary(lm(Y~X+Z))$sigma)
+    tag.oneX = TRUE
+  } else tag.oneX = FALSE
 
-if(tag.noX == TRUE){
-  alpha_0 <- c(alpha_0, rep(0,K))
-  beta_0 <- c(beta_0, rep(0,K))
-}
 
-if(tag.oneX == TRUE){
-  alpha_0 <- c(alpha_0, rep(0,K-1))
-  beta_0 <- c(beta_0, rep(0,K-1))
-}
+
+
+  if(n>K){
+    alpha_0 = as.vector(summary(lm(Z~X))$coefficients[,1])
+    beta_0 = as.vector(summary(lm(Y~Z+X))$coefficients[-2,1])
+    gam_0 = as.vector(summary(lm(Y~Z+X))$coefficients[2,1])
+    sd.z_0 = as.vector(summary(lm(Z~X))$sigma)
+    sd.y_0 = as.vector(summary(lm(Y~X+Z))$sigma)
+  }else{
+    cv.fit.Z = cv.glmnet(X,Z,standardize = FALSE, alpha=0)
+    bestlam.Z     = cv.fit.Z$lambda.min
+    temp.Z     = glmnet(X,Z,lambda=bestlam.Z, standardize = FALSE, alpha=0)
+    alpha_0 <- c(as.vector(temp.Z$a0),as.vector(temp.Z$beta))
+
+    cv.fit.Y = cv.glmnet(X,Y,standardize = FALSE, alpha=0)
+    bestlam.Y     = cv.fit.Y$lambda.min
+    temp.Y     = glmnet(X,Y,lambda=bestlam.Y, standardize = FALSE, alpha=0)
+    beta_0 <- c(as.vector(temp.Y$a0),as.vector(temp.Y$beta))
+
+    gam_0 = as.vector(summary(lm(Y~Z))$coefficients[2,1])
+    sd.z_0 = (K+n+1)/(n^2 +n)*norm(Z, type="2")^2 - norm(t(X)%*%Z,type="2")^2/(n^2 +n)
+    sd.y_0 = (K+n+1)/(n^2 +n)*norm(Y, type="2")^2 - norm(t(X)%*%Y,type="2")^2/(n^2 +n)
+  }
+
+
+
+  if(tag.noX == TRUE){
+    alpha_0 <- c(alpha_0, rep(0,K))
+    beta_0 <- c(beta_0, rep(0,K))
+  }
+
+  if(tag.oneX == TRUE){
+    alpha_0 <- c(alpha_0, rep(0,K-1))
+    beta_0 <- c(beta_0, rep(0,K-1))
+  }
 
 df.optim2 <- cbind(Y,Z,X) %>% as.matrix()
 
@@ -82,12 +101,14 @@ gr = function(par){
 }
 
 if(method=="CG" || method == "BFGS"){
-  res.opt=tryCatch(optim(par.in,fn,gr,method = method), error=function(e) {optim(par.in,fn,gr, method = "L-BFGS-B")})
+  res.opt=tryCatch(optim(par.in,fn,gr,method = method),
+                   error=function(e) {optim(par.in,fn,gr, method = "L-BFGS-B")})
 
 } else{
   res.opt=tryCatch(optim(par.in, fn, gr, method = method,
                 lower=c(0, rep(0,K), 0, rep(0,K), 0, 0.0001, 0.0001),
-                upper=c(10000, rep(10000,K), 10000, rep(10000,K), 1000, 1000, 1000)), error=function(e) {optim(par.in,fn,gr, method = "CG")})
+                upper=c(10000, rep(10000,K), 10000, rep(10000,K), 1000, 1000, 1000)),
+                error=function(e) {optim(par.in,fn,gr, method = "CG")})
 
 }
 
