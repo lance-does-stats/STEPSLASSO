@@ -31,7 +31,7 @@
 #'                      sigma1=sdy.hat, sigma2=int.sigma2, gamma=int.gamma)
 
 
-stepsLassoSolver=function(A, Y1, X1, Y2, c1, c2, lambda, sigma1, sigma2, gamma, method="L-BFGS-B", maxIter=1000, verbose=FALSE){
+stepsLassoSolver=function(A, Y1, X1, Y2, c1, c2, lambda, sigma1, sigma2, gamma, maxIter=1000, verbose=FALSE){
 
   pX=ncol(A)
   nX=nrow(A)
@@ -85,12 +85,25 @@ stepsLassoSolver=function(A, Y1, X1, Y2, c1, c2, lambda, sigma1, sigma2, gamma, 
       return(res.ll$d.ll)
     }
 
-    if(method=="CG" || method == "BFGS"){
-      res.opt=tryCatch(optim(par.in,fn,gr,method = method), error=function(e) {optim(par.in,fn,gr,method = "L-BFGS-B")})
-    } else{
-      res.opt=tryCatch(optim(par.in, fn, gr, method = method,
-                    lower=c(0, rep(0,pX), 0, rep(0,pX), 0, 0.0001, 0.0001),
-                    upper=c(10000, rep(10000,pX), 10000, rep(10000,pX), 1000, 1000, 1000)), error=function(e) {optim(par.in,fn,gr,method = "CG")})
+    res.opt=tryCatch(optim(par.in, fn, gr, method = "L-BFGS-B",
+                           lower=c(0, rep(0,K), 0, rep(0,K), 0, 0.0001, 0.0001),
+                           upper=c(10000, rep(10000,K), 10000, rep(10000,K), 1000, 1000, 1000)),
+                     error=function(e) e)
+
+    if(is(res.opt,"error")){
+      res.opt=tryCatch(optim(par.in,fn,gr,method = "CG"),
+                       error=function(e) e)
+      method2error=1
+    }
+
+    if(is(res.opt,"error") && method2error==1){
+      res.opt=tryCatch(optim(par.in,fn,gr,method = "BFGS"),
+                       error=function(e) e)
+      method3error=1
+    }
+
+    if(is(res.opt,"error") && method3error==1){
+      break;
     }
 
     sigma2=res.opt$par[4+2*pX]

@@ -41,13 +41,15 @@ stepsGLMNET <- function(data.mat){
     sdz <- (K+n+1)/(n^2 +n)*norm(Z.temp, type="2")^2 - norm(Sigma.hat%*%t(X.temp)%*%Z.temp,type="2")^2/(n^2 +n)
     #sdz <- (K+n+1)/(n^2 +n)*norm(Z.temp, type="2")^2 - norm(t(X.temp)%*%Z.temp,type="2")^2/(n^2 +n)
     gam <- lm(Y.temp~Z.temp)$coef[2] %>% as.numeric()
+    optimized=1
   }else{
-    estimates <- optimSTEPS(data.mat, method="L-BFGS-B")
+    estimates <- optimSTEPS(data.mat)
     gam <- estimates$gamma
     sdz <- estimates$sdz
+    optimized <- estimates$optimized
   }
 
 
-  list(int.sdz=sdz, int.gamma=gam)
+  list(int.sdz=sdz, int.gamma=gam, optimized=optimized)
 
 }

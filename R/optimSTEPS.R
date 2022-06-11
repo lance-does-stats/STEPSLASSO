@@ -7,7 +7,7 @@
 #' @import MASS magrittr stats
 #' @export
 
-optimSTEPS <- function(data.mat, method="L-BFGS-B"){
+optimSTEPS <- function(data.mat){
 
 
   c1 <- data.mat$c1
@@ -40,15 +40,16 @@ optimSTEPS <- function(data.mat, method="L-BFGS-B"){
 
 
 
-
   if(n>K){
     alpha_0 = as.vector(summary(lm(Z~X))$coefficients[,1])
     beta_0 = as.vector(summary(lm(Y~Z+X))$coefficients[-2,1])
+
     gam_0 = as.vector(summary(lm(Y~Z+X))$coefficients[2,1])
     sd.z_0 = as.vector(summary(lm(Z~X))$sigma)
-    sd.y_0 = as.vector(summary(lm(Y~X+Z))$sigma)
+    sd.y_0 <- data.mat$sd.y
+
   }else{
-    cv.fit.Z = cv.glmnet(X,Z,standardize = FALSE, alpha=0)
+    cv.fit.Z = cv.glmnet(X,Z, alpha=0, standardize = FALSE)
     bestlam.Z     = cv.fit.Z$lambda.min
     temp.Z     = glmnet(X,Z,lambda=bestlam.Z, standardize = FALSE, alpha=0)
     alpha_0 <- c(as.vector(temp.Z$a0),as.vector(temp.Z$beta))
@@ -60,7 +61,7 @@ optimSTEPS <- function(data.mat, method="L-BFGS-B"){
 
     gam_0 = as.vector(summary(lm(Y~Z))$coefficients[2,1])
     sd.z_0 = (K+n+1)/(n^2 +n)*norm(Z, type="2")^2 - norm(t(X)%*%Z,type="2")^2/(n^2 +n)
-    sd.y_0 = (K+n+1)/(n^2 +n)*norm(Y, type="2")^2 - norm(t(X)%*%Y,type="2")^2/(n^2 +n)
+    sd.y_0 <- data.mat$sd.y
   }
 
 
@@ -99,17 +100,29 @@ gr = function(par){
   res.ll = likelihoodSTEPS(df.optim2, c1=c1, c2=c2, para.ll)
   return(res.ll$d.ll)
 }
+optimized=1
 
-if(method=="CG" || method == "BFGS"){
-  res.opt=tryCatch(optim(par.in,fn,gr,method = method),
-                   error=function(e) {optim(par.in,fn,gr, method = "L-BFGS-B")})
+res.opt=tryCatch(optim(par.in, fn, gr, method = "L-BFGS-B",
+                       lower=c(0, rep(0,K), 0, rep(0,K), 0, 0.0001, 0.0001),
+                       upper=c(10000, rep(10000,K), 10000, rep(10000,K), 1000, 1000, 1000)),
+                 error=function(e) e)
 
-} else{
-  res.opt=tryCatch(optim(par.in, fn, gr, method = method,
-                lower=c(0, rep(0,K), 0, rep(0,K), 0, 0.0001, 0.0001),
-                upper=c(10000, rep(10000,K), 10000, rep(10000,K), 1000, 1000, 1000)),
-                error=function(e) {optim(par.in,fn,gr, method = "CG")})
+if(is(res.opt,"error")){
+  res.opt=tryCatch(optim(par.in,fn,gr,method = "CG"),
+                   error=function(e) e)
+  method2error=1
+}
 
+if(is(res.opt,"error") && method2error==1){
+  res.opt=tryCatch(optim(par.in,fn,gr,method = "BFGS"),
+                   error=function(e) e)
+  method3error=1
+}
+
+
+if(is(res.opt,"error") && method3error==1){
+  res.opt=list(par=par.in)
+  optimized=0
 }
 
 
@@ -138,7 +151,8 @@ return(list(alpha0= res.opt$par[1],
             beta= beta,
             gamma=res.opt$par[3+2*K],
             sdz=res.opt$par[4+2*K],
-            sdy=res.opt$par[5+2*K]))
+            sdy=res.opt$par[5+2*K],
+            optimized=optimized))
 
 }
 

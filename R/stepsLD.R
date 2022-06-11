@@ -11,7 +11,8 @@ stepsLD <- function(data.mat){
   Z <- data.mat$data[,2]
   X <- data.mat$data[,-c(1,2)]
 
-  estimates <- optimSTEPS(data.mat, method="BFGS")
+  estimates <- optimSTEPS(data.mat)
+
 
   #number of selected covariates - k
   k <- length(estimates$alpha)
@@ -38,7 +39,8 @@ stepsLD <- function(data.mat){
   list(alpha.table=cbind(estimates$alpha, pval.s, pval.w, pval.lrt),
        alpha.hat = estimates$alpha,
        sdz.hat=estimates$sdz,
-       gamma.hat=estimates$gamma)
+       gamma.hat=estimates$gamma,
+       optimized=estimates$optimized)
 
 }
 

@@ -35,12 +35,14 @@ stepsLasso <- function(Y, c1, c2, Z, X, beta.hat, sdy.hat, maxIter=1000, verbose
 
   #### STEP 2 - Get initial estimate for sdz and gamma from GLMNET ####
 
-  data.mat2 <- list(c1=c1, c2=c2, data=cbind(Y,Z,X))
+  data.mat2 <- list(c1=c1, c2=c2, data=cbind(Y,Z,X), beta=beta.hat, sd.y=sdy.hat)
   estimates2 <- stepsGLMNET(data.mat2)
+
 
   # initial estimate for sdz
   sdz2 <- estimates2$int.sdz
   gam2 <- estimates2$int.gamma
+  optim2Worked <- estimates2$optimized
 
 
   #### STEP 3 - Choose best lambda to pass to stepsLassoSolver ####
@@ -127,8 +129,7 @@ stepsLasso <- function(Y, c1, c2, Z, X, beta.hat, sdy.hat, maxIter=1000, verbose
         Z.sub <- fold[,2]
 
         outlist = stepsLassoSolver(A=A.sub, Y2=Z.sub, Y1=Y.sub, X1=beta.hat, gamma=gam2, c1=c1, c2=c2,
-                                   lambda = lam0[i], sigma2=sdz2, sigma1 = sdy.hat,
-                                   method="BFGS", maxIter=maxIter, verbose=verbose)
+                                   lambda = lam0[i], sigma2=sdz2, sigma1 = sdy.hat, maxIter=maxIter, verbose=verbose)
         Ax=not.fold[,-c(1,2)] %*% outlist$alpha
         Axz=Ax-not.fold[,2];
         mse[j]=sum(Axz^2)
@@ -149,8 +150,7 @@ stepsLasso <- function(Y, c1, c2, Z, X, beta.hat, sdy.hat, maxIter=1000, verbose
         Z.sub <- fold[,2]
 
         outlist = stepsLassoSolver(A=A.sub, Y2=Z.sub, Y1=Y.sub, X1=beta.hat, gamma=gam2, c1=c1, c2=c2,
-                                   lambda = lam0[i], sigma2=sdz2, sigma1 = sdy.hat,
-                                   method="BFGS", maxIter=maxIter, verbose=verbose)
+                                   lambda = lam0[i], sigma2=sdz2, sigma1 = sdy.hat, maxIter=maxIter, verbose=verbose)
         Ax=not.fold[,-c(1,2)] %*% outlist$alpha
         Axz=Ax-not.fold[,2];
         mse[j]=sum(Axz^2)
@@ -199,8 +199,10 @@ stepsLasso <- function(Y, c1, c2, Z, X, beta.hat, sdy.hat, maxIter=1000, verbose
 
   #### STEP 6 - Refit estimates with p<0.05 using stepsLD() ####
 
-  data.mat6 <- list(c1=c1,c2=c2,data=cbind(Y,Z,X[,include5]))
+  data.mat6 <- list(c1=c1,c2=c2,data=cbind(Y,Z,X[,include5]),sd.y=sdy.hat)
   estimates6 <- stepsLD(data.mat6)
+  optim6Worked <- estimates6$optimized
+
   rownames(estimates6$alpha.table) <- S.hat
   colnames(estimates6$alpha.table)[1] <- "alpha.hat"
 
@@ -217,9 +219,9 @@ stepsLasso <- function(Y, c1, c2, Z, X, beta.hat, sdy.hat, maxIter=1000, verbose
        alpha.hat.table=estimates6$alpha.table,
        alpha.hat=estimates6$alpha.hat,
        sdz.hat=estimates6$sdz.hat,
-       gamma.hat=estimates6$gamma.hat)
-
-
+       gamma.hat=estimates6$gamma.hat,
+       optim2Worked=optim2Worked,
+       optim6Worked=optim6Worked)
 
 }
 
