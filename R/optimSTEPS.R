@@ -103,7 +103,7 @@ gr = function(par){
 optimized=1
 
 res.opt=tryCatch(optim(par.in, fn, gr, method = "L-BFGS-B",
-                       lower=c(0, rep(0,K), 0, rep(0,K), 0, 0.0001, 0.0001),
+                       lower=c(-10000, rep(-10000,K), -10000, rep(-10000,K), -1000, 0.0001, 0.0001),
                        upper=c(10000, rep(10000,K), 10000, rep(10000,K), 1000, 1000, 1000)),
                  error=function(e) e)
 
