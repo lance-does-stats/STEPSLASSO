@@ -25,12 +25,22 @@ stepsLD <- function(data.mat){
   # Calculate 3 types of p-value for every selected covariate
   if(k==1){
     pval.s <- scoreTestSTEPS(data.mat, position=1)$`Score P-value`
-    pval.w <- waldTestSTEPS(data.mat, position=1)$`Wald P-value`
+    pval.w.int <- tryCatch(waldTestSTEPS(data.mat, position=1)$`Wald P-value`, error=function(e) e)
+      if(is(pval.w,"error")){
+        pval.w= -1
+      } else{
+        pval.w <- pval.w.int$`Wald P-value`
+      }
     pval.lrt <- lrtTestSTEPS(data.mat, position=1)$`LRT P-value`
   }else{
     for(i in 1:k){
       pval.s[i] <- scoreTestSTEPS(data.mat, position=i)$`Score P-value`
-      pval.w[i] <- waldTestSTEPS(data.mat, position=i)$`Wald P-value`
+      pval.w.int <- tryCatch(waldTestSTEPS(data.mat, position=1)$`Wald P-value`, error=function(e) e)
+      if(is(pval.w,"error")){
+        pval.w[i]= -1
+      } else{
+        pval.w[i] <- pval.w.int$`Wald P-value`
+      }
       pval.lrt[i] <- lrtTestSTEPS(data.mat, position=i)$`LRT P-value`
     }
   }
