@@ -192,6 +192,21 @@ stepsLasso <- function(Y, c1, c2, Z, X, beta.hat, sdy.hat, maxIter=1000, verbose
 
   alpha.HD.score <- stepsHDScoreTest(data.mat5, TestParallel=TestParallel, reserveNcores=reserveNcores)
   alpha5 <- alpha.HD.score[which(alpha.HD.score[,2]<0.05),2]
+  if(length(alpha5)==0){
+    return(list(beta.hat=beta.hat,
+                sdy.hat=sdy.hat,
+                initial.gamma=gam2,
+                initial.sdz=sdz2,
+                best.lambda=bestlam,
+                alpha.lasso=alpha.HD.score,
+                X.sig.05="None",
+                alpha.hat="No significant paramters to refit.",
+                sdz.hat="Sigma-Z not refit.",
+                gamma.hat="Gamma not refit.",
+                optim2Worked=optim2Worked,
+                optim6Worked=NULL))
+    invokeRestart("abort")
+  }
   S.hat <- noquote(names(alpha5))
   include5 <- which(alpha.HD.score[,2]<0.05)
 
