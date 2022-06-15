@@ -176,47 +176,51 @@ stepsLasso <- function(Y, c1, c2, Z, X, beta.hat, sdy.hat, maxIter=1000, verbose
   alpha4 <- estimates4$alpha[which(estimates4$alpha!=0),]
 
   if(length(alpha4)==0){
-    return(list(beta.hat=beta.hat,
+    A <- rep(0,pX)
+    pval_score <- rep(1,pX)
+    list(beta.hat=beta.hat,
                 sdy.hat=sdy.hat,
                 initial.gamma=gam2,
                 initial.sdz=sdz2,
                 best.lambda=bestlam,
-                alpha.refit=NULL,
+                alpha.refit=cbind(A,pval_score),
                 X.selected=NULL,
                 sdz.hat=NULL,
                 gamma.hat=NULL,
-                optim2Worked=NULL))
-    invokeRestart("abort")
+                optim2Worked=optim2Worked)
+
+  } else{
+    S.hat <- noquote(names(alpha4))
+    include5 <- which(estimates4$alpha!=0) + 2
+
+
+    #### STEP 5 - Get D-Score p-value based on stepsLassoSolver estimates using stepsHDScoreTest() ####
+    data.mat5 <- list(data=df3[,c(1,2,include5)], c1=c1, c2=c2, sd.y=sdy.hat, B=beta.hat[include5-2])
+
+    estimates5 <- optimSTEPS(data.mat5)
+    alpha5 <- estimates5$alpha
+    names(alpha5) <- S.hat
+
+
+    #### STEP 6 - Refit estimates with p<0.05 using stepsLD() ####
+    data.mat6 <- list(data=df3[,c(1,2,include5)], c1=c1, c2=c2, sdy=sdy.hat, beta=beta.hat[include5-2],
+                      sdz=estimates5$sdz, gamma=estimates5$gamma, alpha=alpha5)
+    alpha.HD.score <- stepsHDScoreTest(data.mat6, TestParallel=TestParallel, reserveNcores=reserveNcores)
+
+
+    #### STEP 7 - Return estimates ####
+    list(beta.hat=beta.hat,
+         sdy.hat=sdy.hat,
+         initial.gamma=gam2,
+         initial.sdz=sdz2,
+         best.lambda=bestlam,
+         alpha.refit=alpha.HD.score,
+         X.selected=S.hat,
+         sdz.hat=estimates5$sdz,
+         gamma.hat=estimates5$gamma,
+         optim2Worked=optim2Worked)
   }
-  S.hat <- noquote(names(alpha4))
-  include5 <- which(estimates4$alpha!=0) + 2
 
-
-  #### STEP 5 - Get D-Score p-value based on stepsLassoSolver estimates using stepsHDScoreTest() ####
-  data.mat5 <- list(data=df3[,c(1,2,include5)], c1=c1, c2=c2, sd.y=sdy.hat, B=beta.hat[include5-2])
-
-  estimates5 <- optimSTEPS(data.mat5)
-  alpha5 <- estimates5$alpha
-  names(alpha5) <- S.hat
-
-
-  #### STEP 6 - Refit estimates with p<0.05 using stepsLD() ####
-  data.mat6 <- list(data=df3[,c(1,2,include5)], c1=c1, c2=c2, sdy=sdy.hat, beta=beta.hat[include5-2],
-                    sdz=estimates5$sdz, gamma=estimates5$gamma, alpha=alpha5)
-  alpha.HD.score <- stepsHDScoreTest(data.mat6, TestParallel=TestParallel, reserveNcores=reserveNcores)
-
-
-  #### STEP 7 - Return estimates ####
-  list(beta.hat=beta.hat,
-       sdy.hat=sdy.hat,
-       initial.gamma=gam2,
-       initial.sdz=sdz2,
-       best.lambda=bestlam,
-       alpha.refit=alpha.HD.score,
-       X.selected=S.hat,
-       sdz.hat=estimates5$sdz,
-       gamma.hat=estimates5$gamma,
-       optim2Worked=optim2Worked)
 
 }
 
