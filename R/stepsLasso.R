@@ -176,11 +176,11 @@ stepsLasso <- function(Y, c1, c2, Z, X, beta.hat, sdy.hat, maxIter=1000, verbose
                 initial.gamma=gam2,
                 initial.sdz=sdz2,
                 best.lambda=bestlam,
-                alpha.lasso=NULL,
-                X.sig.05=NULL,
-                alpha.hat=NULL,
+                alpha.refit=NULL,
+                X.selected=NULL,
                 sdz.hat=NULL,
-                gamma.hat=NULL))
+                gamma.hat=NULL,
+                optim2Worked=NULL))
     invokeRestart("abort")
   }
   S.hat <- noquote(names(alpha4))
@@ -207,7 +207,7 @@ stepsLasso <- function(Y, c1, c2, Z, X, beta.hat, sdy.hat, maxIter=1000, verbose
        initial.gamma=gam2,
        initial.sdz=sdz2,
        best.lambda=bestlam,
-       alpha.lasso=alpha.HD.score,
+       alpha.refit=alpha.HD.score,
        X.selected=S.hat,
        sdz.hat=estimates5$sdz,
        gamma.hat=estimates5$gamma,
