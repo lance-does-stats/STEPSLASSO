@@ -1,7 +1,7 @@
 Package: STEPSLASSO
 Type: Package
 Title: High-Dimensional Regression of Continuous Secondary Trait Under EPS
-Version: 0.1.0
+Version: 0.1.1
 Author@R: person("Lance", "Ford", "lance.does.stats@gmail.com")
 Maintainer: The package maintainer <yourself@somewhere.net>
 Description: Conducts High-Dimensional Regression of Continuous Secondary Trait 

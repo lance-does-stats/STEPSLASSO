@@ -22,10 +22,10 @@ scoreTestSTEPS <- function(data.mat, position=1, null_value=0){
 
   estimates <- optimSTEPS(data.mat)
   theta <- sqrt(estimates$gamma^2 * estimates$sdz^2 + estimates$sdy^2) %>% as.numeric()
-  A0 <- estimates$alpha0
+  #A0 <- estimates$alpha0
   A <- estimates$alpha
   As <- A; As[position] <- null_value
-  B0 <- estimates$beta0
+  #B0 <- estimates$beta0
   B <- estimates$beta
   gam <- estimates$gamma
   sdz <- estimates$sdz
@@ -34,13 +34,13 @@ scoreTestSTEPS <- function(data.mat, position=1, null_value=0){
   if(length(A)==1){
     n <-  length(X)
     K <-  1
-    XA <- A0 + X*As
-    XB <- B0 + X*B
+    XA <- X*As
+    XB <- X*B
   }else{
     n <-  nrow(X)
     K <-  ncol(X)
-    XA <- A0 + X%*%As
-    XB <- B0 + X%*%B
+    XA <- X%*%As
+    XB <- X%*%B
   }
 
   t1 <- c1 - (XB + gam*XA)# lower
