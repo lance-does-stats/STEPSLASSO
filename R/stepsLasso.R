@@ -114,7 +114,12 @@ stepsLasso <- function(Y, c1, c2, Z, X, beta.hat, sdy.hat, maxIter=1000, verbose
   # bestlam <- HDIC[HDIC[,2]==min(HDIC[,2]),][1]
 
   #### Cross validation ####
-  nfolds=10;
+  if(pX<100){
+    nfolds=4
+  } else{
+    nfolds=10;
+  }
+
   foldid = sample(rep(seq(nfolds), length = nX))
   if(LassoParallel==T){
     cl <- parallel::makeCluster(parallel::detectCores() - reserveNcores)
