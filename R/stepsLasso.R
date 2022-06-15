@@ -183,60 +183,35 @@ stepsLasso <- function(Y, c1, c2, Z, X, beta.hat, sdy.hat, maxIter=1000, verbose
                 gamma.hat=NULL))
     invokeRestart("abort")
   }
+  S.hat <- noquote(names(alpha4))
+  include5 <- which(estimates4$alpha!=0) + 2
 
 
   #### STEP 5 - Get D-Score p-value based on stepsLassoSolver estimates using stepsHDScoreTest() ####
+  data.mat5 <- list(data=df3[,c(1,2,include5)], c1=c1, c2=c2, sd.y=sdy.hat, B=beta.hat[include5-2])
 
-  data.mat5 <- list(data=df3, c1=c1, c2=c2, sdy=sdy.hat, beta=beta.hat,
-                    sdz=estimates4$sdz, gamma=estimates4$gamma, alpha=estimates4$alpha)
-
-  alpha.HD.score <- stepsHDScoreTest(data.mat5, TestParallel=TestParallel, reserveNcores=reserveNcores)
-  alpha5 <- alpha.HD.score[which(alpha.HD.score[,2]<0.05),2]
-  if(length(alpha5)==0){
-    return(list(beta.hat=beta.hat,
-                sdy.hat=sdy.hat,
-                initial.gamma=gam2,
-                initial.sdz=sdz2,
-                best.lambda=bestlam,
-                alpha.lasso=alpha.HD.score,
-                X.sig.05="None",
-                alpha.hat="No significant paramters to refit.",
-                sdz.hat="Sigma-Z not refit.",
-                gamma.hat="Gamma not refit.",
-                optim2Worked=optim2Worked,
-                optim6Worked=NULL))
-    invokeRestart("abort")
-  }
-  S.hat <- noquote(names(alpha5))
-  include5 <- which(alpha.HD.score[,2]<0.05)
-
+  estimates5 <- optimSTEPS(data.mat5)
+  alpha5 <- estimates5$alpha
+  names(alpha5) <- S.hat
 
 
   #### STEP 6 - Refit estimates with p<0.05 using stepsLD() ####
+  data.mat6 <- list(data=df3[,c(1,2,include5)], c1=c1, c2=c2, sdy=sdy.hat, beta=beta.hat[include5-2],
+                    sdz=estimates5$sdz, gamma=estimates5$gamma, alpha=alpha5)
+  alpha.HD.score <- stepsHDScoreTest(data.mat6, TestParallel=TestParallel, reserveNcores=reserveNcores)
 
-  data.mat6 <- list(c1=c1,c2=c2,data=cbind(Y,Z,X[,include5]),sd.y=sdy.hat)
-  estimates6 <- stepsLD(data.mat6)
-  optim6Worked <- estimates6$optimized
-
-  rownames(estimates6$alpha.table) <- S.hat
-  colnames(estimates6$alpha.table)[1] <- "alpha.hat"
 
   #### STEP 7 - Return estimates ####
-
-
   list(beta.hat=beta.hat,
        sdy.hat=sdy.hat,
        initial.gamma=gam2,
        initial.sdz=sdz2,
        best.lambda=bestlam,
        alpha.lasso=alpha.HD.score,
-       X.sig.05=S.hat,
-       alpha.hat.table=estimates6$alpha.table,
-       alpha.hat=estimates6$alpha.hat,
-       sdz.hat=estimates6$sdz.hat,
-       gamma.hat=estimates6$gamma.hat,
-       optim2Worked=optim2Worked,
-       optim6Worked=optim6Worked)
+       X.selected=S.hat,
+       sdz.hat=estimates5$sdz,
+       gamma.hat=estimates5$gamma,
+       optim2Worked=optim2Worked)
 
 }
 
