@@ -55,7 +55,7 @@ stepsLasso <- function(Y, c1, c2, Z, X, beta.hat, sdy.hat, maxIter=1000, verbose
   lam0=NULL
   if(is.null(lam0)){
     lamMax=max(abs(t(X)%*%Z))
-    if(nX<pX){
+    if(nX<=pX){
       lamMin=0.01*lamMax
     }else{
       lamMin=0.0001*lamMax
@@ -188,7 +188,8 @@ stepsLasso <- function(Y, c1, c2, Z, X, beta.hat, sdy.hat, maxIter=1000, verbose
                 X.selected=NULL,
                 sdz.hat=NULL,
                 gamma.hat=NULL,
-                optim2Worked=optim2Worked)
+                optim2Worked=optim2Worked,
+                optim6Worked=1)
 
   } else if (length(alpha4)==1 || length(alpha4)==2){
     S.hat <- noquote(names(alpha4))
@@ -222,7 +223,45 @@ stepsLasso <- function(Y, c1, c2, Z, X, beta.hat, sdy.hat, maxIter=1000, verbose
          X.selected=S.hat,
          sdz.hat=estimates5$sdz,
          gamma.hat=estimates5$gamma,
-         optim2Worked=optim2Worked)
+         optim2Worked=optim2Worked,
+         optim6Worked=1)
+
+  } else if(length(alpha4)>(pX-3)){
+
+    #### STEP 5 -  Use alpha estimates from stepsLassoSolver and bestlam####
+    S.hat <- noquote(names(alpha4))
+    include5 <- which(estimates4$alpha!=0) + 2
+    alpha5 <- alpha4
+    df5 <- df3[,c(1,2,include5)]
+    beta.selected <- beta.hat[include5-2]
+    data.mat5 <- list(data=df5, c1=c1, c2=c2, sd.y=sdy.hat, B=beta.selected)
+
+    #### STEP 6 -  Get LD-Score p-value based on stepsLD() ####
+    uni.pval=matrix(nrow= length(alpha5),ncol = 2)
+    for(j in 1:length(alpha5)){
+      data.mat.uni <- data.mat5
+      data.mat.uni$data <- data.mat.uni$data[,c(1,2,j+2)]
+      uni.pval[j,] <- stepsLD(data.mat.uni)$alpha.table[,1:2]
+    }
+
+    rownames(uni.pval) <- paste0('X',1:length(alpha5))
+    colnames(uni.pval) <- c('A','pval_score')
+
+
+    #### STEP 7 - Return estimates ####
+    list(beta.hat=beta.hat,
+         sdy.hat=sdy.hat,
+         initial.gamma=gam2,
+         initial.sdz=sdz2,
+         best.lambda=bestlam,
+         alpha.refit=uni.pval,
+         X.selected=S.hat,
+         sdz.hat=estimates4$sdz,
+         gamma.hat=estimates4$gamma,
+         optim2Worked=optim2Worked,
+         optim6Worked=0)
+
+
 
   } else{
     S.hat <- noquote(names(alpha4))
@@ -256,7 +295,8 @@ stepsLasso <- function(Y, c1, c2, Z, X, beta.hat, sdy.hat, maxIter=1000, verbose
          X.selected=S.hat,
          sdz.hat=estimates5$sdz,
          gamma.hat=estimates5$gamma,
-         optim2Worked=optim2Worked)
+         optim2Worked=optim2Worked,
+         optim6Worked=1)
   }
 
 
