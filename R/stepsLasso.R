@@ -66,106 +66,107 @@ stepsLasso <- function(Y, c1, c2, Z, X, beta.hat, sdy.hat, lam0=NULL, maxIter=10
   }
 
   df3 <- cbind(Y,Z,X) %>% as.matrix()
-  #### HDIC ####
-  # fn = function(par){
-  #   para.ll = list(A0= par[1], A = par[1+1:K],
-  #                  B0=par[2+K], B = par[2+K+1:K],
-  #                  gam = par[3+2*K],
-  #                  sd.z = par[4+2*K],
-  #                  sd.y = par[5+2*K])
-  #   res.ll = likelihoodSTEPS(df3, c1=c1, c2=c2, para.ll)
-  #   return(res.ll$ll)
-  # }
-  #
-  # # Parallel
-  # options(warn = -1)
-  # cl <- parallel::makeCluster(parallel::detectCores() - reserveNcores)
-  # doParallel::registerDoParallel(cl)
-  # HDIC.out=foreach(i = 1:length(lam0), .combine=c, .export=c('stepsLassoSolver','stepsLeastR','stepsGLMNET','likelihoodSTEPS'), .packages=c('MASS','glmnet')) %dopar%{
-  #   HDIC <- c()
-  #
-  #
-  #   iter <- stepsLassoSolver(A=X, Y2=Z, Y1=Y, X1=beta.hat, gamma=gam2, c1=c1, c2=c2,
-  #                            lambda = lam0[i], sigma2=sdz2, sigma1 = sdy.hat,
-  #                            maxIter=maxIter, verbose=verbose)
-  #
-  #   par.in <- c(as.vector(c(0,iter$alpha)),
-  #               as.vector(c(0,beta.hat)),
-  #               as.vector(iter$gamma),
-  #               as.vector(iter$sdz),
-  #               as.vector(sdy.hat))
-  #
-  #
-  #
-  #   # Number of covariates selected
-  #   k <- length(which(iter$alpha!=0))
-  #
-  #   #HDIC <- 2*fn(par.in) + k*log(nX)
-  #   #HDIC <- 2*fn(par.in) + k*pX^(1/3)
-  #   HDIC <- 2*fn(par.in) + k*2*log(pX)
-  #
-  #
-  #   return(HDIC)
-  # }
-  # parallel::stopCluster(cl)
-  # options(warn = 0)
-  #
-  # HDIC <- cbind(lam0,HDIC.out)
-  # bestlam <- HDIC[HDIC[,2]==min(HDIC[,2]),][1]
+  ### HDIC ####
+  K=pX
+  fn = function(par){
+    para.ll = list(A0= par[1], A = par[1+1:K],
+                   B0=par[2+K], B = par[2+K+1:K],
+                   gam = par[3+2*K],
+                   sd.z = par[4+2*K],
+                   sd.y = par[5+2*K])
+    res.ll = likelihoodSTEPS(df3, c1=c1, c2=c2, para.ll)
+    return(res.ll$ll)
+  }
+
+  # Parallel
+  options(warn = -1)
+  cl <- parallel::makeCluster(parallel::detectCores() - reserveNcores)
+  doParallel::registerDoParallel(cl)
+  HDIC.out=foreach(i = 1:length(lam0), .combine=c, .export=c('stepsLassoSolver','stepsLeastR','stepsGLMNET','likelihoodSTEPS'), .packages=c('MASS','glmnet')) %dopar%{
+    HDIC <- c()
+
+
+    iter <- stepsLassoSolver(A=X, Y2=Z, Y1=Y, X1=beta.hat, gamma=gam2, c1=c1, c2=c2,
+                             lambda = lam0[i], sigma2=sdz2, sigma1 = sdy.hat,
+                             maxIter=maxIter, verbose=verbose)
+
+    par.in <- c(as.vector(c(0,iter$alpha)),
+                as.vector(c(0,beta.hat)),
+                as.vector(iter$gamma),
+                as.vector(iter$sdz),
+                as.vector(sdy.hat))
+
+
+
+    # Number of covariates selected
+    k <- length(which(iter$alpha!=0))
+
+    #HDIC <- 2*fn(par.in) + k*log(nX)
+    HDIC <- 2*fn(par.in) + k*pX^(1/3)
+    #HDIC <- 2*fn(par.in) + k*2*log(pX)
+
+
+    return(HDIC)
+  }
+  parallel::stopCluster(cl)
+  options(warn = 0)
+
+  HDIC <- cbind(lam0,HDIC.out)
+  bestlam <- HDIC[HDIC[,2]==min(HDIC[,2]),][1]
 
   #### Cross validation ####
-  if(nX<100){
-    nfolds=5
-  } else{
-    nfolds=10;
-  }
-
-  foldid = sample(rep(seq(nfolds), length = nX))
-  if(LassoParallel==T){
-    cl <- parallel::makeCluster(parallel::detectCores() - reserveNcores)
-    doParallel::registerDoParallel(cl)
-    cv.mse=foreach(i = 1:length(lam0), .combine=c, .export=c('stepsLassoSolver','stepsLeastR','stepsGLMNET','likelihoodSTEPS')) %dopar%{
-      mse <- c()
-      for(j in 1:nfolds){
-        not.fold <- df3[foldid != j,]
-        fold <- df3[foldid == j,]
-        A.sub <- fold[,-c(1,2)]
-        Y.sub <- fold[,1]
-        Z.sub <- fold[,2]
-
-        outlist = stepsLassoSolver(A=A.sub, Y2=Z.sub, Y1=Y.sub, X1=beta.hat, gamma=gam2, c1=c1, c2=c2,
-                                   lambda = lam0[i], sigma2=sdz2, sigma1 = sdy.hat, maxIter=maxIter, verbose=verbose)
-        Ax=not.fold[,-c(1,2)] %*% outlist$alpha
-        Axz=Ax-not.fold[,2];
-        mse[j]=sum(Axz^2)
-      }
-      return(mean(mse))
-    }
-    parallel::stopCluster(cl)
-
-  } else{
-
-    for(i in 1:length(lam0)){
-      mse=c()
-      for(j in 1:nfolds){
-        not.fold <- df3[foldid != j,]
-        fold <- df3[foldid == j,]
-        A.sub <- fold[,-c(1,2)]
-        Y.sub <- fold[,1]
-        Z.sub <- fold[,2]
-
-        outlist = stepsLassoSolver(A=A.sub, Y2=Z.sub, Y1=Y.sub, X1=beta.hat, gamma=gam2, c1=c1, c2=c2,
-                                   lambda = lam0[i], sigma2=sdz2, sigma1 = sdy.hat, maxIter=maxIter, verbose=verbose)
-        Ax=not.fold[,-c(1,2)] %*% outlist$alpha
-        Axz=Ax-not.fold[,2];
-        mse[j]=sum(Axz^2)
-      }
-    }
-  }
-
-
-  mse <- cbind(lam0,cv.mse)
-  bestlam <- mse[mse[,2]==min(mse[,2]),][1]
+  # if(nX<100){
+  #   nfolds=5
+  # } else{
+  #   nfolds=10;
+  # }
+  #
+  # foldid = sample(rep(seq(nfolds), length = nX))
+  # if(LassoParallel==T){
+  #   cl <- parallel::makeCluster(parallel::detectCores() - reserveNcores)
+  #   doParallel::registerDoParallel(cl)
+  #   cv.mse=foreach(i = 1:length(lam0), .combine=c, .export=c('stepsLassoSolver','stepsLeastR','stepsGLMNET','likelihoodSTEPS')) %dopar%{
+  #     mse <- c()
+  #     for(j in 1:nfolds){
+  #       not.fold <- df3[foldid != j,]
+  #       fold <- df3[foldid == j,]
+  #       A.sub <- fold[,-c(1,2)]
+  #       Y.sub <- fold[,1]
+  #       Z.sub <- fold[,2]
+  #
+  #       outlist = stepsLassoSolver(A=A.sub, Y2=Z.sub, Y1=Y.sub, X1=beta.hat, gamma=gam2, c1=c1, c2=c2,
+  #                                  lambda = lam0[i], sigma2=sdz2, sigma1 = sdy.hat, maxIter=maxIter, verbose=verbose)
+  #       Ax=not.fold[,-c(1,2)] %*% outlist$alpha
+  #       Axz=Ax-not.fold[,2];
+  #       mse[j]=sum(Axz^2)
+  #     }
+  #     return(mean(mse))
+  #   }
+  #   parallel::stopCluster(cl)
+  #
+  # } else{
+  #
+  #   for(i in 1:length(lam0)){
+  #     mse=c()
+  #     for(j in 1:nfolds){
+  #       not.fold <- df3[foldid != j,]
+  #       fold <- df3[foldid == j,]
+  #       A.sub <- fold[,-c(1,2)]
+  #       Y.sub <- fold[,1]
+  #       Z.sub <- fold[,2]
+  #
+  #       outlist = stepsLassoSolver(A=A.sub, Y2=Z.sub, Y1=Y.sub, X1=beta.hat, gamma=gam2, c1=c1, c2=c2,
+  #                                  lambda = lam0[i], sigma2=sdz2, sigma1 = sdy.hat, maxIter=maxIter, verbose=verbose)
+  #       Ax=not.fold[,-c(1,2)] %*% outlist$alpha
+  #       Axz=Ax-not.fold[,2];
+  #       mse[j]=sum(Axz^2)
+  #     }
+  #   }
+  # }
+  #
+  #
+  # mse <- cbind(lam0,cv.mse)
+  # bestlam <- mse[mse[,2]==min(mse[,2]),][1]
 
   #### STEP 4 - Use stepsLassoSolver (stepsLeastR nested within) to iteratively estimate A ####
   options(warn = -1)
