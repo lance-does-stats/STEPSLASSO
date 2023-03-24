@@ -65,7 +65,7 @@ stepsLasso <- function(Y, c1, c2, Z, X, B0.hat, beta.hat, sdy.hat, selection="CV
   # Function to calculate -logLikelihood value
   df <- cbind(Y,Z,X)
 
-  if(selection %in% c("AIC", "BIC", "HDIC1","HDIC2", "EBIC","HQC")){
+  if(selection %in% c("AIC", "BIC", "RIC","HDIC1", "RICC")){
     #  #### HDICs ####
     fn = function(par){
       para.ll = list(A0= par[1], A = par[1+1:pX],
@@ -74,7 +74,7 @@ stepsLasso <- function(Y, c1, c2, Z, X, B0.hat, beta.hat, sdy.hat, selection="CV
                      sd.z = par[4+2*pX],
                      sd.y = par[5+2*pX])
       res.ll = likelihoodSTEPS(df, c1=c1, c2=c2, para.ll)
-      return(res.ll$ll.sum)
+      return(res.ll$ll)
     }
 
     # Parallel
@@ -107,17 +107,15 @@ stepsLasso <- function(Y, c1, c2, Z, X, B0.hat, beta.hat, sdy.hat, selection="CV
       } else if(selection == "BIC") {
         HDIC <- 2*fn(par.in) + k*log(nX)
 
-      } else if(selection == "HDIC1") {
+      } else if(selection == "HDIC") {
         HDIC <- 2*fn(par.in) + k*pX^(1/3)
 
-      } else if(selection == "HDIC2") {
+      } else if(selection == "RIC") {
         HDIC <- 2*fn(par.in) + k*2*log(pX)
 
-      } else if(selection == "EBIC") {
-        HDIC <- 2*fn(par.in) + k*log(nX) + 0.1*k*log(pX)
+      } else if(selection == "RICC") {
+        HDIC <- 2*fn(par.in) + k*2*(log(pX) + log(log(pX)))
 
-      } else if(selection == "HQC") {
-        HDIC <- 2*fn(par.in) + log(log(nX))
       }
 
 
