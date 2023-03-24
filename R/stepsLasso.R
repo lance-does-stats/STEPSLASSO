@@ -65,7 +65,7 @@ stepsLasso <- function(Y, c1, c2, Z, X, B0.hat, beta.hat, sdy.hat, selection="CV
   # Function to calculate -logLikelihood value
   df <- cbind(Y,Z,X)
 
-  if(selection %in% c("AIC", "BIC", "RIC","HDIC1", "RICC")){
+  if(selection %in% c("AIC", "BIC", "RIC","HDIC", "RICC")){
     #  #### HDICs ####
     fn = function(par){
       para.ll = list(A0= par[1], A = par[1+1:pX],
