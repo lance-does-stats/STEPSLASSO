@@ -1,5 +1,4 @@
 #' Test for high-dimensional sparse regression for secondary trait analysis under extreme phenotype sampling data.
-#'
 #' This function tests the effects of predictors modeled jointly for high-dimensional extreme phenotype sampling data.
 #' @param Y Vector of primary trait values. Required.
 #' @param c1 Left censored point. Required.

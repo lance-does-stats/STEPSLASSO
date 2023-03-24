@@ -71,7 +71,7 @@ likelihoodSTEPS <- function(data.mat, c1, c2, para){
                    "b0", paste("b",1:K,sep=""),
                    "gamma","sd.z","sd.y")
 
-  ll <- mean(-1*log(f))
+  ll <- sum(-1*log(f))
   d.ll <- colMeans(-1*df/f)
 
   return(list(ll=ll, d.ll=d.ll))
