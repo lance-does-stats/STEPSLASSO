@@ -89,7 +89,7 @@ stepsLasso <- function(Y, c1, c2, Z, X, B0.hat, beta.hat, sdy.hat, selection="CV
       beta.hat.int <- c(B0, beta.hat)
 
       iter <- stepsLassoSolver(A=X.int, Y2=Z, Y1=Y, X1=beta.hat.int, gamma=gam2, c1=c1, c2=c2,
-                               lambda = lam0[i], sigma2=sdz2, sigma1 = sdy.hat, method=method,
+                               lambda = lam0[i], sigma2=sdz2, sigma1 = sdy.hat,
                                maxIter=maxIter, verbose=verbose)
 
       par.in <- c(as.vector(c(iter$alpha)),
@@ -173,7 +173,7 @@ stepsLasso <- function(Y, c1, c2, Z, X, B0.hat, beta.hat, sdy.hat, selection="CV
   #method=method.in <- "CG"
   estimates4 <- stepsLassoSolver(A=X, Y1=Y, X1=beta.hat, Y2=Z,
                                  c1=c1, c2=c2, lambda=bestlam, sigma1=sdy.hat, sigma2=sdz2, gamma=gam2,
-                                 method=method, maxIter=maxIter, verbose=verbose)
+                                 maxIter=maxIter, verbose=verbose)
 
   alpha4 <- estimates4$alpha[which(estimates4$alpha!=0),]
   alpha4

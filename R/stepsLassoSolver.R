@@ -90,12 +90,14 @@ stepsLassoSolver=function(A, Y1, X1, Y2, c1, c2, lambda, sigma1, sigma2, gamma, 
                            upper=c(10000, rep(10000,K), 10000, rep(10000,K), 1000, 1000, 1000)),
                      error=function(e) e)
 
+    method2error=0
     if(is(res.opt,"error")){
       res.opt=tryCatch(optim(par.in,fn,gr,method = "CG"),
                        error=function(e) e)
       method2error=1
     }
 
+    method3error=0
     if(is(res.opt,"error") && method2error==1){
       res.opt=tryCatch(optim(par.in,fn,gr,method = "BFGS"),
                        error=function(e) e)
